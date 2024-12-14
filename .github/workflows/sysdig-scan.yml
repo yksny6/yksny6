@@ -1,0 +1,89 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Sysdig - Build, scan, push and upload sarif report
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '18 2 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+
+    permissions:
+      checks: write # for sysdiglabs/scan-action to publish the checks
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build the Docker image
+      # Tag image to be built
+      # Change ${{ github.repository }} variable by another image name if you want but don't forget changing also image-tag below
+      run: docker build . --file Dockerfile --tag ${{ github.repository }}:latest
+
+    - name: Sysdig Secure Inline Scan
+      id: scan
+      uses: sysdiglabs/scan-action@768d7626a14897e0948ea89c8437dd46a814b163
+      with:
+        # Tag of the image to analyse.
+        # Change ${{ github.repository }} variable by another image name if you want but don't forget changing also image-tag above
+        image-tag: ${{ github.repository }}:latest
+        # API token for Sysdig Scanning auth
+        sysdig-secure-token: ${{ secrets.SYSDIG_SECURE_TOKEN}}
+        # Sysdig secure endpoint. Please read: https://docs.sysdig.com/en/docs/administration/saas-regions-and-ip-ranges/
+        # US-East https://secure.sysdig.com
+        # US-West https://us2.app.sysdig.com
+        # EU      https://eu1.app.sysdig.com
+        sysdig-secure-url: https://us2.app.sysdig.com
+        dockerfile-path: ./Dockerfile
+        input-type: docker-daemon
+        ignore-failed-scan: true
+        # Sysdig inline scanner requires privileged rights
+        run-as-user: root
+
+    - uses: github/codeql-action/upload-sarif@v3
+      #Upload SARIF file
+      if: always()
+      with:
+        sarif_file: ${{ steps.scan.outputs.sarifReport }}
+            on
+  pull_request:
+    branches:
+    - main:Node。js環境のセットアップ
+  :actions/setup-node@v4。1。0
+  と:
+    #npmrcで常に認証を設定します。
+    常に認証:#オプション、デフォルトはfalse
+    #使用するバージョンのバージョン仕様。例:12。x、10。15。1、>= 10。15。0。
+    ノードバージョン:#オプション
+    #使用するバージョンの仕様を含むファイル。例:package。json、.nvmrc、.node-version、.tool-versions。
+    node-version-file:#オプション
+    #使用するノードのターゲットアーキテクチャ。例:x86、x64。デフォルトではシステムアーキテクチャを使用します。
+    アーキテクチャ:#オプション
+    #バージョン仕様を満たす最新の利用可能なバージョンをアクションで確認する場合は、このオプションを設定します。
+    チェック最新:#オプション
+    #auth用に設定するオプションのレジストリ。レジストリをプロジェクトレベル。npmrcおよび。yarnrcファイルに設定し、env。NODE_AUTH_TOKENから読み取る認証を設定します。
+    registry-url:#オプション
+    #スコープされたレジストリに対して認証するためのオプションの範囲。GitHubパッケージレジストリ（https://npm。pkg。github。com/)。
+    スコープ:#オプション
+    #ノードバージョンからノードディストリビューションをプルするために使用されます。デフォルトがあるため、これは通常ユーザーから提供されません。github。comでこのアクションを実行する場合、デフォルト値で十分です。GHESで実行する場合、レート制限が発生している場合は、github。comのパーソナルアクセストークンを渡すことができます。
+    トークン:#オプション、デフォルトは${{ github。server_url == 'https://github。com'&&github。token ||' '' }}
+    #デフォルトのディレクトリでキャッシュするパッケージマネージャを指定するために使用されます。サポートされている値:npm、糸、pnpm。
+    キャッシュ:#オプション
+    #依存関係ファイルへのパスを指定するために使用されます:package-lock。json、yarn。lockなど。複数の依存関係をキャッシュするためのワイルドカードまたはファイル名のリストをサポートします。
+    cache-dependency-path:#オプション
+          
